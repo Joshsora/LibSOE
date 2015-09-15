@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibSOE", "LibSOE\LibSOE.csproj", "{28A6251E-60CF-4164-8F86-B5216811EEC2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SOEDaemon", "SOEDaemon\SOEDaemon.csproj", "{D720EE93-03E3-4129-B068-D4692A0F8EAA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{28A6251E-60CF-4164-8F86-B5216811EEC2} = {28A6251E-60CF-4164-8F86-B5216811EEC2}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
