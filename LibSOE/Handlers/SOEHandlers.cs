@@ -1,4 +1,6 @@
-﻿namespace SOE
+﻿using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public partial class SOEProtocol
     {

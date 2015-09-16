@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SOE
+using SOE.Core;
+
+namespace SOE.Interfaces
 {
     public class SOEWriter
     {

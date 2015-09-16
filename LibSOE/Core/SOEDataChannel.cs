@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SOE
+using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public class SOEDataChannel
     {
@@ -246,7 +248,7 @@ namespace SOE
                 writer.AddUInt16(sequenceNumber);
 
                 // Add the message fragment
-                writer.AddBytes(message.Fragments[i]);
+                writer.AddBytes(message.GetFragment(i));
 
                 // Get the final packet and send it!
                 packet = writer.GetFinalSOEPacket(Client, true, true);

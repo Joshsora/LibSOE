@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Security.Policy;
 
-namespace SOE
+namespace SOE.Interfaces
 {
     public class SOEMessage
     {

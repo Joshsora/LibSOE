@@ -2,7 +2,9 @@
 using System.Linq;
 using System.Net;
 
-namespace SOE
+using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public class SOEClient
     {

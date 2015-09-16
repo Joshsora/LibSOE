@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
+using SOE.Core;
+using SOE.Interfaces;
+
 namespace SOE
 {
     public delegate void DelSOEMessageHandler(SOEClient sender, SOEMessage message);

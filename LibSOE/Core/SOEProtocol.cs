@@ -3,7 +3,9 @@ using System.Linq;
 using System.IO;
 using Ionic.Zlib;
 
-namespace SOE
+using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public partial class SOEProtocol
     {

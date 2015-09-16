@@ -1,4 +1,4 @@
-﻿namespace SOE
+﻿namespace SOE.Interfaces
 {
     public class SOEPacket
     {

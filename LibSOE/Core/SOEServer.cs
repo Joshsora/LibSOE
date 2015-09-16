@@ -4,7 +4,9 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace SOE
+using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public struct SOEPendingPacket
     {
