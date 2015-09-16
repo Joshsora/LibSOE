@@ -1,9 +1,9 @@
-﻿namespace SOE
+﻿namespace SOE.Interfaces
 {
     public class SOEPacket
     {
-        public ushort OpCode;
-        public byte[] Raw;
+        private ushort OpCode;
+        private byte[] Raw;
 
         public SOEPacket(ushort opCode, byte[] rawMessage)
         {
@@ -11,14 +11,19 @@
             Raw = rawMessage;
         }
 
-        public void SetOpCode(ushort opCode)
-        {
-            OpCode = opCode;
-        }
-
         public ushort GetOpCode()
         {
             return OpCode;
+        }
+
+        public byte[] GetRaw()
+        {
+            return Raw;
+        }
+
+        public int GetLength()
+        {
+            return Raw.Length;
         }
     }
 }

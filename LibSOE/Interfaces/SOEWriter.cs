@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SOE
+using SOE.Core;
+
+namespace SOE.Interfaces
 {
     public class SOEWriter
     {
@@ -45,8 +47,8 @@ namespace SOE
         public SOEWriter(SOEPacket packet)
         {
             // Message information
-            Data = new List<byte>(packet.Raw);
-            OpCode = packet.OpCode;
+            Data = new List<byte>(packet.GetRaw());
+            OpCode = packet.GetOpCode();
 
             // We're a packet, not a message
             IsMessage = false;
@@ -55,8 +57,8 @@ namespace SOE
         public SOEWriter(SOEMessage message)
         {
             // Message information
-            Data = new List<byte>(message.Raw);
-            OpCode = message.OpCode;
+            Data = new List<byte>(message.GetRaw());
+            OpCode = message.GetOpCode();
 
             // We're a message!
             IsMessage = true;
@@ -131,19 +133,19 @@ namespace SOE
                 // Handle multi messages
                 if (OpCode == (ushort)SOEOPCodes.MULTI_MESSAGE)
                 {
-                    if (message.OpCode == (ushort)SOEOPCodes.MULTI_MESSAGE)
+                    if (message.GetOpCode() == (ushort)SOEOPCodes.MULTI_MESSAGE)
                     {
                         // Setup a reader
                         SOEReader reader = new SOEReader(message);
 
                         // Get the messages and add them
-                        byte[] messages = reader.ReadBytes(message.Raw.Length - 2);
+                        byte[] messages = reader.ReadToEnd();
                         AddBytes(messages);
                     }
                     else
                     {
                         // Get the size of the message
-                        int size = message.Raw.Length;
+                        int size = message.GetLength();
 
                         // Is the size bigger than 255?
                         if (size > 0xFF)
@@ -181,14 +183,14 @@ namespace SOE
                         }
 
                         // Add the actual message
-                        AddBytes(message.Raw);
+                        AddBytes(message.GetRaw());
                     }
                 }
             }
             else
             {
                 // Just add the message
-                AddBytes(message.Raw);
+                AddBytes(message.GetRaw());
             }
         }
 
@@ -220,10 +222,10 @@ namespace SOE
 
                 // Make the new packet
                 Data = new List<byte>();
-
-                // Add the packet's arguments
                 AddUInt16(client.GetNextSequenceNumber());
                 AddBytes(originalPacket);
+
+                // Set our raw data
                 rawData = GetRaw();
 
                 // Change our OpCode so that we're a reliable data packet
@@ -313,12 +315,11 @@ namespace SOE
             SOEMessage message = new SOEMessage(OpCode, GetRaw());
 
             // Does this message have to be fragmented?
-            // We do - 10 for saftey when making the packets
-            if (Data.Count > client.GetBufferSize() - 10)
+            if (Data.Count > client.GetBufferSize())
             {
                 // Setup a reader and keep track of our size
                 SOEReader reader = new SOEReader(GetRaw());
-                int size = message.Raw.Length;
+                int size = message.GetLength();
 
                 // While there are fragments to be added..
                 while (size > 0)
@@ -327,23 +328,20 @@ namespace SOE
                     byte[] raw;
 
                     // Is this fragment going to be smaller than the buffer size?
-                    if (size < client.GetBufferSize() - 10)
+                    if (size < client.GetBufferSize())
                     {
                         raw = reader.ReadBytes(size);
                         size = 0;
                     }
                     else
                     {
-                        raw = reader.ReadBytes((int)client.GetBufferSize() - 10);
-                        size -= (int)client.GetBufferSize() - 10;
+                        raw = reader.ReadBytes((int)client.GetBufferSize());
+                        size -= (int)client.GetBufferSize();
                     }
                     
                     // Add the finalized fragment
                     message.AddFragment(raw);
                 }
-
-                // Fragmented!
-                message.IsFragmented = true;
             }
 
             // Return the message we made

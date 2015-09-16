@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Net;
 
-namespace SOE
+using SOE.Interfaces;
+
+namespace SOE.Core
 {
     public class SOEConnectionManager
     {
@@ -11,9 +13,9 @@ namespace SOE
         public SOEServer Server;
 
         // Connections
-        public List<SOEClient> Clients;
-        public Dictionary<IPEndPoint, int> Host2ClientID;
-        public Dictionary<uint, int> SessionID2ClientID;
+        private readonly List<SOEClient> Clients;
+        private readonly Dictionary<IPEndPoint, int> Host2ClientID;
+        private readonly Dictionary<uint, int> SessionID2ClientID;
 
         public SOEConnectionManager(SOEServer server)
         {
@@ -144,9 +146,7 @@ namespace SOE
             if (!clientBased)
             {
                 // Tell them we're disconnecting them
-                SOEWriter packetWriter = new SOEWriter(
-                    (ushort)SOEOPCodes.DISCONNECT
-                );
+                SOEWriter packetWriter = new SOEWriter((ushort)SOEOPCodes.DISCONNECT);
 
                 // Arguments
                 packetWriter.AddUInt32(client.GetSessionID());

@@ -2,23 +2,23 @@
 using System.Text;
 using System.IO;
 
-namespace SOE
+namespace SOE.Interfaces
 {
     public class SOEReader
     {
-        private Stream Stream;
+        private readonly Stream Stream;
 
         public SOEReader(SOEPacket packet)
         {
-            Stream = new MemoryStream(packet.Raw);
-            
+            Stream = new MemoryStream(packet.GetRaw());
+
             // Skip the SOE OpCode
             ReadUInt16();
         }
 
         public SOEReader(SOEMessage message)
         {
-            Stream = new MemoryStream(message.Raw);
+            Stream = new MemoryStream(message.GetRaw());
 
             // Skip the message OpCode
             ReadHostInt16();
@@ -32,13 +32,19 @@ namespace SOE
         public byte ReadByte()
         {
             byte[] buffer = ReadBytes(1);
-            return (byte)buffer[0];
+            return buffer[0];
+        }
+
+        public bool ReadBoolean()
+        {
+            return ReadByte() == 0x01;
         }
 
         public byte[] ReadBytes(int length)
         {
             byte[] buffer = new byte[length];
             Stream.Read(buffer, 0, length);
+
             return buffer;
         }
 
@@ -69,7 +75,7 @@ namespace SOE
         public int ReadInt32()
         {
             byte[] buffer = ReadBytes(4);
-            return (int)(buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
+            return buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
         }
 
         public ushort ReadHostUInt16()
@@ -99,7 +105,7 @@ namespace SOE
         public int ReadHostInt32()
         {
             byte[] buffer = ReadBytes(4);
-            return (int)(buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]);
+            return buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0];
         }
 
         public string ReadNullTerminatedString()
@@ -136,9 +142,16 @@ namespace SOE
             return Encoding.Unicode.GetString(buffer);
         }
 
-        public bool ReadBoolean()
+        public byte[] ReadBlob()
         {
-            return ReadByte() == 0x1 ? true : false;
+            uint length = ReadHostUInt32();
+            return ReadBytes((int) length);
+        }
+
+        public byte[] ReadToEnd(uint exclude=0)
+        {
+            long length = (Stream.Length - exclude) - Stream.Position;
+            return ReadBytes((int)length);
         }
     }
 }

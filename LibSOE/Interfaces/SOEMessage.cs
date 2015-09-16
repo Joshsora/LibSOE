@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 
-namespace SOE
+namespace SOE.Interfaces
 {
     public class SOEMessage
     {
-        public ushort OpCode;
-        public byte[] Raw;
+        private ushort OpCode;
+        private byte[] Raw;
 
-        public List<byte[]> Fragments;
+        private readonly List<byte[]> Fragments;
         public bool IsFragmented;
 
         public SOEMessage(ushort opCode, byte[] rawMessage)
@@ -19,14 +19,37 @@ namespace SOE
             IsFragmented = false;
         }
 
-        public void SetOpCode(ushort opCode)
-        {
-            OpCode = opCode;
-        }
-
-        public uint GetOpCode()
+        public ushort GetOpCode()
         {
             return OpCode;
+        }
+
+        public byte[] GetRaw()
+        {
+            return Raw;
+        }
+
+        public int GetLength()
+        {
+            return Raw.Length;
+        }
+
+        public int GetFragmentCount()
+        {
+            return Fragments.Count;
+        }
+
+        public byte[] GetFragment(int i)
+        {
+            if (IsFragmented)
+            {
+                if (i < Fragments.Count)
+                {
+                    return Fragments[i];
+                }
+            }
+
+            return new byte[0];
         }
 
         public void AddFragment(byte[] fragment)
