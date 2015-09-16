@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Core\SOEDataChannel.cs" />
     <Compile Include="Database\IDatabaseBackend.cs" />
+    <Compile Include="Database\MongoBackend.cs" />
     <Compile Include="Handlers\SOEHandlers.cs" />
     <Compile Include="Interfaces\SOEMessage.cs" />
     <Compile Include="Core\SOEClient.cs" />
