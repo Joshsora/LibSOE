@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-using SOE.Core;
 using SOE.Interfaces;
 
-namespace SOE
+namespace SOE.Core
 {
     public delegate void DelSOEMessageHandler(SOEClient sender, SOEMessage message);
 
-    [AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method)]
     public class SOEMessageHandler : Attribute
     {
         public string MessageName;

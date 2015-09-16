@@ -65,9 +65,6 @@ namespace SOE.Core
             // Setup a writer
             SOEWriter writer = new SOEWriter((ushort)SOEOPCodes.OUT_OF_ORDER_RELIABLE_DATA);
             
-            // Compressed? (Always false)
-            writer.AddBoolean(false);
-
             // Where abouts did the sending mess up?
             writer.AddUInt16(sequenceNumber);
 
@@ -114,7 +111,7 @@ namespace SOE.Core
                 uint totalSize = reader.ReadUInt32();
 
                 // Is this a valid sequence number?
-                if ((FragmentSequenceNumber != LastReceivedSequenceNumber + 1) || (FragmentSequenceNumber != 0))
+                if ((FragmentSequenceNumber != LastReceivedSequenceNumber + 1) && (FragmentSequenceNumber != 0))
                 {
                     // Out of order!
                     ReceivedSequenceOutOfOrder(FragmentSequenceNumber);
@@ -170,7 +167,7 @@ namespace SOE.Core
 
             // Have we received in order?
             ushort sequenceNumber = reader.ReadUInt16();
-            if ((sequenceNumber != LastReceivedSequenceNumber + 1) || (sequenceNumber != 0))
+            if ((sequenceNumber != LastReceivedSequenceNumber + 1) && (sequenceNumber != 0))
             {
                 ReceivedSequenceOutOfOrder(sequenceNumber);
                 return;

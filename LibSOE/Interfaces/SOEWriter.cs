@@ -79,37 +79,37 @@ namespace SOE.Interfaces
 
         public void AddUInt16(ushort value)
         {
-            byte[] Message = BitConverter.GetBytes(value).Reverse<byte>().ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).Reverse().ToArray();
             AddBytes(Message);
         }
 
         public void AddUInt32(uint value)
         {
-            byte[] Message = BitConverter.GetBytes(value).Reverse<byte>().ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).Reverse().ToArray();
             AddBytes(Message);
         }
 
         public void AddInt16(short value)
         {
-            byte[] Message = BitConverter.GetBytes(value).Reverse<byte>().ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).Reverse().ToArray();
             AddBytes(Message);
         }
 
         public void AddInt32(int value)
         {
-            byte[] Message = BitConverter.GetBytes(value).Reverse<byte>().ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).Reverse().ToArray();
             AddBytes(Message);
         }
 
         public void AddHostUInt16(ushort value)
         {
-            byte[] Message = BitConverter.GetBytes(value).ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).ToArray();
             AddBytes(Message);
         }
 
         public void AddHostUInt32(uint value)
         {
-            byte[] Message = BitConverter.GetBytes(value).ToArray<byte>();
+            byte[] Message = BitConverter.GetBytes(value).ToArray();
             AddBytes(Message);
         }
 
@@ -122,7 +122,7 @@ namespace SOE.Interfaces
 
         public void AddBoolean(bool value)
         {
-            byte v = (byte)(value == true ? 0x1 : 0x0);
+            byte v = (byte)(value ? 0x1 : 0x0);
             AddByte(v);
         }
 
