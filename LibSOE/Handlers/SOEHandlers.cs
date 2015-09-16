@@ -1,6 +1,4 @@
-﻿using SOE.Interfaces;
-
-namespace SOE.Core
+﻿namespace SOE
 {
     public partial class SOEProtocol
     {
@@ -88,7 +86,7 @@ namespace SOE.Core
             int offset = 2;
 
             // Get the data length
-            int dataLength = message.GetLength();
+            int dataLength = message.Raw.Length;
 
             // Get the packets
             while (offset < dataLength)

@@ -4,9 +4,7 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Threading;
 
-using SOE.Interfaces;
-
-namespace SOE.Core
+namespace SOE
 {
     public struct SOEPendingPacket
     {
@@ -118,7 +116,7 @@ namespace SOE.Core
         public void SendPacket(SOEClient client, SOEPacket packet)
         {
             // Send the message
-            UdpClient.Send(packet.GetRaw(), packet.GetLength(), client.Client);
+            UdpClient.Send(packet.Raw, packet.Raw.Length, client.Client);
         }
 
         public void ReceiveMessage(SOEClient sender, byte[] rawMessage)

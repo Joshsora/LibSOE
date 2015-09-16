@@ -2,9 +2,7 @@
 using System.Linq;
 using System.Net;
 
-using SOE.Interfaces;
-
-namespace SOE.Core
+namespace SOE
 {
     public class SOEClient
     {
@@ -146,7 +144,7 @@ namespace SOE.Core
 
         public byte[] Compress(byte[] data)
         {
-            return Server.Protocol.Compress(data);
+            return Server.Protocol.Compress(this, data);
         }
 
         public byte[] GetAppendedCRC32(byte[] packet)
