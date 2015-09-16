@@ -153,7 +153,7 @@ namespace SOE.Core
                 packetWriter.AddUInt16(reason);
 
                 // Send!
-                SOEPacket packet = packetWriter.GetFinalSOEPacket(client, false, false);
+                SOEPacket packet = packetWriter.GetFinalSOEPacket(client, true, false);
                 client.SendPacket(packet);
             }
         }

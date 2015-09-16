@@ -59,13 +59,6 @@ namespace SOE.Core
             0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
         };
 
-        private static readonly ushort[] CompressablePackets =
-        {
-            (ushort) SOEOPCodes.RELIABLE_DATA,
-            (ushort) SOEOPCodes.FRAGMENTED_RELIABLE_DATA,
-            (ushort) SOEOPCodes.ACK_RELIABLE_DATA
-        };
-
         public SOEProtocol(SOEServer server, string protocol)
         {
             // This components settings
@@ -87,9 +80,13 @@ namespace SOE.Core
             ushort opCode = reader.ReadUInt16();
             bool goodPacket = true;
 
-            // Get the packet data
-            byte[] data = reader.ReadToEnd(sender.GetCRCLength());
-            
+             // Get the packet data
+            byte[] data = new byte[rawPacket.Length - (int)sender.GetCRCLength()];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = rawPacket[i];
+            }
+
             // Get the CRC32 checksum for the packet
             uint crc32 = sender.GetCRC32Checksum(data);
 
@@ -104,9 +101,9 @@ namespace SOE.Core
             }
 
             // We have our CRCs! Check if the packet is formed correctly!
-            byte[] crc = BitConverter.GetBytes(crc32).Reverse<byte>().ToArray<byte>();
-            byte[] expectedCRC = BitConverter.GetBytes(expectedCRC32).Reverse<byte>().ToArray<byte>();
-                
+            byte[] crc = BitConverter.GetBytes(crc32).Reverse().ToArray();
+            byte[] expectedCRC = BitConverter.GetBytes(expectedCRC32).Reverse().ToArray();
+            
             int start = 4 - (int)sender.GetCRCLength();
             for (int i = start; i < sender.GetCRCLength(); i++)
             {
@@ -141,15 +138,8 @@ namespace SOE.Core
                 // Is the client compressable?
                 if (sender.IsCompressable())
                 {
-                    // Is this packet compressable?
-                    if (CompressablePackets.Contains(opCode))
-                    {
-                        // Is the packet compressed?
-                        if (rawPacket[2] == 0x01)
-                        {
-                            rawPacket = DecompressPacket(sender, rawPacket);
-                        }
-                    }
+                    // It seems that all packets after 0x02 are compressable..
+                    rawPacket = DecompressPacket(sender, rawPacket);
                 }
             }
 
@@ -195,13 +185,7 @@ namespace SOE.Core
                     break;
 
                 case SOEOPCodes.RELIABLE_DATA:
-                    sender.DataChannel.Receive(packet);
-                    break;
-
                 case SOEOPCodes.FRAGMENTED_RELIABLE_DATA:
-                    sender.DataChannel.Receive(packet);
-                    break;
-
                 case SOEOPCodes.ACK_RELIABLE_DATA:
                     sender.DataChannel.Receive(packet);
                     break;
@@ -356,13 +340,16 @@ namespace SOE.Core
             MemoryStream dataStream = new MemoryStream(data);
             MemoryStream decompressed = new MemoryStream();
 
-            using (ZlibStream zlibStream = new ZlibStream(dataStream, CompressionMode.Decompress))
+            if (packet[2] == 0x01)
             {
-                zlibStream.CopyTo(decompressed);
-            }
+                using (ZlibStream zlibStream = new ZlibStream(dataStream, CompressionMode.Decompress))
+                {
+                    zlibStream.CopyTo(decompressed);
+                }
 
-            // Reconstruct the packet..
-            decompressedData = decompressed.ToArray();
+                // Reconstruct the packet..
+                decompressedData = decompressed.ToArray();
+            }
 
             // Reconstruct the packet..
             byte[] newPacket = new byte[decompressedData.Length + 2];

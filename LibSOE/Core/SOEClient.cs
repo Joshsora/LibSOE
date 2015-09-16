@@ -159,7 +159,7 @@ namespace SOE.Core
 
             // Get the bytes for the CRC, and append the neccasary ones.
             int place = 0;
-            byte[] crcBytes = BitConverter.GetBytes(crc).Reverse<byte>().ToArray<byte>();
+            byte[] crcBytes = BitConverter.GetBytes(crc).Reverse().ToArray();
             for (int i = 4 - (int)CRCLength; i < crcBytes.Length; i++)
             {
                 finalCRCBytes[place] = crcBytes[i];

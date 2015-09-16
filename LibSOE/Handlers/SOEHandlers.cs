@@ -1,4 +1,5 @@
-﻿using SOE.Interfaces;
+﻿using System;
+using SOE.Interfaces;
 
 namespace SOE.Core
 {
@@ -50,7 +51,7 @@ namespace SOE.Core
             else
             {
                 // They aren't using the right protocol...
-                sender.Disconnect((ushort)SOEDisconnectReasons.ConnectionRefused);
+                Log("Got connection request from client with incorrect protocol. Client: {0}, Server: {1}", protocol, ProtocolString);
             }
         }
 
@@ -66,6 +67,7 @@ namespace SOE.Core
             // Handle
             if (sessionID == sender.GetSessionID())
             {
+                Console.WriteLine("Disconnecting");
                 Server.ConnectionManager.DisconnectClient(sender, reason, true);
             }
         }
