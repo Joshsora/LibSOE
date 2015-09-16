@@ -9,21 +9,21 @@ namespace SOE
         public SOEClient Client;
 
         // Last client-sent reliable data
-        public ushort LastReceivedSequenceNumber;
+        private ushort LastReceivedSequenceNumber;
 
         // Server-sent reliable data
-        public int LastDataSendTime;
-        public ushort NextSequenceNumber;
+        private int LastDataSendTime;
+        private ushort NextSequenceNumber;
 
         // Fragmented
-        public bool StartedFragmentedPacket;
-        public ushort FragmentSequenceNumber;
-        public uint ReceivedFragmentsSize;
-        public byte[] FragmentedData;
-        public byte FragmentsTillAck;
+        private bool StartedFragmentedPacket;
+        private ushort FragmentSequenceNumber;
+        private uint ReceivedFragmentsSize;
+        private byte[] FragmentedData;
+        private byte FragmentsTillAck;
 
-        public bool BusySendingFragmentedPacket;
-        public Queue<SOEMessage> FragmentedQueue;
+        private bool BusySendingFragmentedPacket;
+        private Queue<SOEMessage> FragmentedQueue;
 
         public SOEDataChannel(SOEClient client)
         {
@@ -179,7 +179,7 @@ namespace SOE
             LastReceivedSequenceNumber = sequenceNumber;
 
             // Get the SOEMessage
-            byte[] data = reader.ReadBytes(packet.Raw.Length - 4);
+            byte[] data = reader.ReadToEnd();
 
             // Handle!
             Client.ReceiveMessage(data);
@@ -187,15 +187,16 @@ namespace SOE
 
         public void Receive(SOEPacket packet)
         {
-            if (packet.OpCode == (ushort)SOEOPCodes.FRAGMENTED_RELIABLE_DATA)
+            ushort opCode = packet.GetOpCode();
+            if (opCode == (ushort)SOEOPCodes.FRAGMENTED_RELIABLE_DATA)
             {
                 ReceiveFragment(packet);
             }
-            else if (packet.OpCode == (ushort)SOEOPCodes.RELIABLE_DATA)
+            else if (opCode == (ushort)SOEOPCodes.RELIABLE_DATA)
             {
                 ReceiveMessage(packet);
             }
-            else if (packet.OpCode == (ushort) SOEOPCodes.ACK_RELIABLE_DATA)
+            else if (opCode == (ushort) SOEOPCodes.ACK_RELIABLE_DATA)
             {
                 // TODO: Handle repeat-until-acknowledged and all that comes with it.
                 Log("Data Ack");
@@ -227,7 +228,7 @@ namespace SOE
             bool sentInitial = false;
 
             // The rest aren't any different
-            for (int i = 0; i < message.Fragments.Count; i++)
+            for (int i = 0; i < message.GetFragmentCount(); i++)
             {
                 // Setup a new writer
                 writer = new SOEWriter((ushort)SOEOPCodes.FRAGMENTED_RELIABLE_DATA);
@@ -236,7 +237,7 @@ namespace SOE
                 if (!sentInitial)
                 {
                     // Add the total message length
-                    writer.AddUInt32((uint)message.Raw.Length);
+                    writer.AddUInt32((uint)message.GetLength());
                     sentInitial = true;
                 }
 

@@ -116,7 +116,7 @@ namespace SOE
         public void SendPacket(SOEClient client, SOEPacket packet)
         {
             // Send the message
-            UdpClient.Send(packet.Raw, packet.Raw.Length, client.Client);
+            UdpClient.Send(packet.GetRaw(), packet.GetLength(), client.Client);
         }
 
         public void ReceiveMessage(SOEClient sender, byte[] rawMessage)

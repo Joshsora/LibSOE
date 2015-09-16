@@ -10,7 +10,8 @@ namespace SOE
         public string ProtocolString;
         private readonly SOEServer Server;
 
-        static readonly uint[] CRCTable = {
+        static readonly uint[] CRCTable =
+        {
             0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
             0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
             0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
@@ -56,6 +57,13 @@ namespace SOE
             0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
         };
 
+        private static readonly ushort[] CompressablePackets =
+        {
+            (ushort) SOEOPCodes.RELIABLE_DATA,
+            (ushort) SOEOPCodes.FRAGMENTED_RELIABLE_DATA,
+            (ushort) SOEOPCodes.ACK_RELIABLE_DATA
+        };
+
         public SOEProtocol(SOEServer server, string protocol)
         {
             // This components settings
@@ -75,15 +83,10 @@ namespace SOE
             // Read the packet
             SOEReader reader = new SOEReader(rawPacket);
             ushort opCode = reader.ReadUInt16();
-
             bool goodPacket = true;
 
             // Get the packet data
-            byte[] data = new byte[rawPacket.Length - (int)sender.GetCRCLength()];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = rawPacket[i];
-            }
+            byte[] data = reader.ReadToEnd(sender.GetCRCLength());
             
             // Get the CRC32 checksum for the packet
             uint crc32 = sender.GetCRC32Checksum(data);
@@ -112,9 +115,6 @@ namespace SOE
                     goodPacket = false;
                     break;
                 }
-
-                // Keep going, so far we are good..
-                goodPacket = true;
             }
 
             // Are we malformed?
@@ -135,6 +135,20 @@ namespace SOE
                 {
                     rawPacket = DecryptPacket(sender, rawPacket);
                 }
+
+                // Is the client compressable?
+                if (sender.IsCompressable())
+                {
+                    // Is this packet compressable?
+                    if (CompressablePackets.Contains(opCode))
+                    {
+                        // Is the packet compressed?
+                        if (rawPacket[2] == 0x01)
+                        {
+                            rawPacket = DecompressPacket(sender, rawPacket);
+                        }
+                    }
+                }
             }
 
             // Handle the decompressed/decrypted packet!
@@ -143,10 +157,13 @@ namespace SOE
 
         public void HandlePacket(SOEClient sender, SOEPacket packet)
         {
+            // Operation
+            ushort opCode = packet.GetOpCode();
+
             // Security Measure
             if (!sender.HasSession())
             {
-                if (packet.OpCode != (ushort)SOEOPCodes.SESSION_REQUEST)
+                if (opCode != (ushort)SOEOPCodes.SESSION_REQUEST)
                 {
                     // We really don't care about this client.
                     // They can try send stuff as much as possible.
@@ -156,7 +173,7 @@ namespace SOE
             }
 
             // Handle!
-            switch ((SOEOPCodes)packet.OpCode)
+            switch ((SOEOPCodes)opCode)
             {
                 case SOEOPCodes.SESSION_REQUEST:
                     HandleSessionRequest(sender, packet);
@@ -176,25 +193,21 @@ namespace SOE
                     break;
 
                 case SOEOPCodes.RELIABLE_DATA:
-                    packet = HandleCompressablePacket(sender, packet);
+                    sender.DataChannel.Receive(packet);
+                    break;
+
+                case SOEOPCodes.FRAGMENTED_RELIABLE_DATA:
                     sender.DataChannel.Receive(packet);
                     break;
 
                 case SOEOPCodes.ACK_RELIABLE_DATA:
-                    packet = HandleCompressablePacket(sender, packet);
                     sender.DataChannel.Receive(packet);
                     break;
 
                 default:
-                    Log("Received Unknown SOEPacket 0x{0:X2}!", packet.OpCode);
+                    Log("Received Unknown SOEPacket 0x{0:X2}!", packet.GetOpCode());
                     break;
             }
-        }
-
-        private SOEPacket HandleCompressablePacket(SOEClient sender, SOEPacket packet)
-        {
-            byte[] data = DecompressPacket(sender, packet.Raw);
-            return new SOEPacket(packet.OpCode, data);
         }
 
         public void HandleMessage(SOEClient sender, byte[] rawMessage)
@@ -213,20 +226,20 @@ namespace SOE
         public void HandleMessage(SOEClient sender, SOEMessage message)
         {
             // Handlers
-            if (MessageHandlers.HasHandler(ProtocolString, message.OpCode))
+            if (MessageHandlers.HasHandler(ProtocolString, message.GetOpCode()))
             {
                 // Log
-                string messageName = MessageHandlers.Protocol2MessageName[ProtocolString][message.OpCode];
-                Log("Received 0x{0:X}, {1}_{2}!", message.OpCode, Server.GAME_NAME, messageName);
+                string messageName = MessageHandlers.Protocol2MessageName[ProtocolString][message.GetOpCode()];
+                Log("Received 0x{0:X}, {1}_{2}!", message.GetOpCode(), Server.GAME_NAME, messageName);
 
                 // Handle it
-                MessageHandlers.GetHandler(ProtocolString, message.OpCode)(sender, message);
+                MessageHandlers.GetHandler(ProtocolString, message.GetOpCode())(sender, message);
             }
             else
             {
                 // Log
-                Log("Received Unknown SOEMessage {0}!", message.OpCode);
-                foreach (byte b in message.Raw)
+                Log("Received Unknown SOEMessage {0}!", message.GetOpCode());
+                foreach (byte b in message.GetRaw())
                 {
                     Console.Write("0x{0:X2} ", b);
                 }
@@ -234,7 +247,7 @@ namespace SOE
             }
         }
 
-        public byte[] Encrypt(SOEClient sender, byte[] data)
+        public byte[] Encrypt(SOEClient client, byte[] data)
         {
             SOEReader reader = new SOEReader(data);
             SOEWriter newPacket = new SOEWriter();
@@ -242,7 +255,7 @@ namespace SOE
             int blockCount = data.Length / 4;
             int byteCount = data.Length % 4;
 
-            uint key = sender.GetCRCSeed();
+            uint key = client.GetCRCSeed();
 
             // Encrypt the blocks of 4 bytes
             for (int i = 0; i < blockCount; i++)
@@ -263,14 +276,8 @@ namespace SOE
             return newPacket.GetRaw();
         }
 
-        public byte[] Compress(SOEClient sender, byte[] data)
+        public byte[] Compress(byte[] data)
         {
-            // Compressable?
-            if (!sender.IsCompressable())
-            {
-                return data;
-            }
-
             // Decompress the old packet..
             MemoryStream dataStream = new MemoryStream(data);
             MemoryStream compressed = new MemoryStream();
@@ -329,7 +336,7 @@ namespace SOE
         private byte[] DecompressPacket(SOEClient sender, byte[] packet)
         {
             // Compressable?
-            if (sender.IsCompressable())
+            if (!sender.IsCompressable())
             {
                 return packet;
             }
@@ -342,20 +349,18 @@ namespace SOE
             }
 
             byte[] decompressedData = data;
-            if (packet[2] == 0x1)
+
+            // Decompress the old packet..
+            MemoryStream dataStream = new MemoryStream(data);
+            MemoryStream decompressed = new MemoryStream();
+
+            using (ZlibStream zlibStream = new ZlibStream(dataStream, CompressionMode.Decompress))
             {
-                // Decompress the old packet..
-                MemoryStream dataStream = new MemoryStream(data);
-                MemoryStream decompressed = new MemoryStream();
-
-                using (ZlibStream zlibStream = new ZlibStream(dataStream, CompressionMode.Decompress))
-                {
-                    zlibStream.CopyTo(decompressed);
-                }
-
-                // Reconstruct the packet..
-                decompressedData = decompressed.ToArray();
+                zlibStream.CopyTo(decompressed);
             }
+
+            // Reconstruct the packet..
+            decompressedData = decompressed.ToArray();
 
             // Reconstruct the packet..
             byte[] newPacket = new byte[decompressedData.Length + 2];

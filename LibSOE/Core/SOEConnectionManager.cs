@@ -11,9 +11,9 @@ namespace SOE
         public SOEServer Server;
 
         // Connections
-        public List<SOEClient> Clients;
-        public Dictionary<IPEndPoint, int> Host2ClientID;
-        public Dictionary<uint, int> SessionID2ClientID;
+        private readonly List<SOEClient> Clients;
+        private readonly Dictionary<IPEndPoint, int> Host2ClientID;
+        private readonly Dictionary<uint, int> SessionID2ClientID;
 
         public SOEConnectionManager(SOEServer server)
         {

@@ -86,7 +86,7 @@
             int offset = 2;
 
             // Get the data length
-            int dataLength = message.Raw.Length;
+            int dataLength = message.GetLength();
 
             // Get the packets
             while (offset < dataLength)
