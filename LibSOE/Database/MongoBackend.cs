@@ -5,15 +5,15 @@ using MongoDB.Driver;
 
 namespace SOE.Database
 {
-    class MongoBackend : IDatabaseBackend
+    public class MongoBackend : IDatabaseBackend
     {
         private IMongoClient client;
         private IMongoDatabase database;
 
-        public void Connect(string username, string password, string host, int port)
+        public void Connect(string host, int port)
         {
             // Connect!
-            string connectionString = string.Format("mongo://{0}:{1}@{2}:{3}/soe_db", username, password, host, port);
+            string connectionString = string.Format("mongodb://{0}:{1}", host, port);
             client = new MongoClient(connectionString);
 
             database = client.GetDatabase("soe_db");
