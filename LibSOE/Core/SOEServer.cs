@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 
 using SOE.Interfaces;
+using Newtonsoft.Json;
 
 namespace SOE.Core
 {
@@ -43,6 +44,7 @@ namespace SOE.Core
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
         
         // Server variables
+        [JsonIgnore]  // We probably don't want to serialize running
         public readonly bool Running = true;
         private readonly int Port = 0;
 

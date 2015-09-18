@@ -4,12 +4,14 @@ using System.Threading;
 using System.Net;
 
 using SOE.Interfaces;
+using Newtonsoft.Json;
 
 namespace SOE.Core
 {
     public class SOEConnectionManager
     {
         // Server component
+        [JsonIgnore]  // Don't serialize the server again!
         public SOEServer Server;
 
         // Connections
