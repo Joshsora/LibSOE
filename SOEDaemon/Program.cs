@@ -19,6 +19,9 @@ namespace SOEDaemon
                 }.SaveConfig();
             }
 
+            // We need to have a way to "silent" servers' output...
+            // or...  server1: Received connection
+
             daemon = new Daemon();
             daemon.LoadConfig();  // Load config
         }
