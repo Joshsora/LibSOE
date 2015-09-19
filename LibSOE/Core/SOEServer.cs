@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 
 using SOE.Interfaces;
+using SOE.Database;
 
 namespace SOE.Core
 {
@@ -38,6 +39,7 @@ namespace SOE.Core
         private readonly UdpClient UdpClient;
         public readonly SOEConnectionManager ConnectionManager;
         public readonly SOEProtocol Protocol;
+        public readonly SOEDatabaseManager DatabaseManager;
 
         private readonly ConcurrentQueue<SOEPendingPacket> IncomingPackets;
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
