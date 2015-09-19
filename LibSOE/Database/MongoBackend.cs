@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using System.IO;
 
 namespace SOE.Database
 {
@@ -70,41 +71,56 @@ namespace SOE.Database
             // Get our cursor, and go through the documents..
             using (var cursor = await collection.FindAsync(completeFilter))
             {
+                // Get the batch
                 await cursor.MoveNextAsync();
                 var batch = cursor.Current;
+
+                // If there aren't any..
                 if (!batch.Any())
                 {
+                    // Return a new TResult
                     return new TResult();
                 }
 
                 // Get the document
                 foreach (var document in batch)
                 {
-                    if (!document.Contains("fields"))
-                    {
-                        // This is not an object..
-                        continue;
-                    }
-
                     // Deserialize the object!
                     return BsonSerializer.Deserialize<TResult>(document["fields"].ToBsonDocument());
                 }
-
-                // Didn't exist..
-                return new TResult();
             }
+
+            // Object didn't exist..
+            return new TResult();
+        }
+
+        public async void Insert(string collectionName, dynamic obj) 
+        {
+            // Serialize the object!
+            BsonDocument serialized = new BsonDocument();
+            serialized.Add("_t", obj.GetType().Name);
+
+            // Add the objects fields!
+            BsonDocument fields = new BsonDocument();
+            using (BsonWriter writer = new BsonDocumentWriter(fields))
+            {
+                BsonSerializer.Serialize(writer, obj.GetType(), obj);
+            }
+            fields.Remove("_t");
+            serialized.Add("fields", fields);
+
+            // Get the collection
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+
+            // Insert the serialized object
+            await collection.InsertOneAsync(serialized);
         }
 
         /*
-        public async Task<uint> Insert(string collection, MongoStorable storable)
-        {
-            
-        }
-
         public async Task<bool> Delete(string collection, uint id)
         {
             
         }
-         */
+        */
     }
 }
