@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using System.IO;
 
 namespace SOE.Database
 {
@@ -149,8 +147,6 @@ namespace SOE.Database
                 fields.Add(newUpdate);
             }
             serialized.Add("$set", fields);
-
-            Console.WriteLine(serialized.ToJson());
 
             // Get the collection
             var collection = database.GetCollection<BsonDocument>(collectionName);
