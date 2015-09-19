@@ -116,11 +116,47 @@ namespace SOE.Database
             await collection.InsertOneAsync(serialized);
         }
 
-        /*
-        public async Task<bool> Delete(string collection, uint id)
+        public async void Update<TResult>(string collectionName, Dictionary<string, dynamic> filter, Dictionary<string, dynamic> update)
         {
-            
+            // Get the type name for the filter
+            string className = typeof (TResult).Name;
+
+            // Prepare the filter
+            BsonDocument completeFilter = new BsonDocument();
+            completeFilter.Add("_t", className);
+            if (filter.Any())
+            {
+                Dictionary<string, dynamic> newFilter = filter.ToDictionary(
+                    x => "fields." + x.Key,
+                    x => x.Value
+                );
+
+                completeFilter.Add(newFilter);
+            }
+
+            // Serialize the object!
+            BsonDocument serialized = new BsonDocument();
+            BsonDocument fields = new BsonDocument();
+
+            // Add the objects fields!
+            if (update.Any())
+            {
+                Dictionary<string, dynamic> newUpdate = update.ToDictionary(
+                    x => "fields." + x.Key,
+                    x => x.Value
+                );
+
+                fields.Add(newUpdate);
+            }
+            serialized.Add("$set", fields);
+
+            Console.WriteLine(serialized.ToJson());
+
+            // Get the collection
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+
+            // Update!
+            await collection.UpdateOneAsync(completeFilter, serialized);
         }
-        */
     }
 }

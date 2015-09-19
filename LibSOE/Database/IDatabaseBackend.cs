@@ -15,6 +15,7 @@ namespace SOE.Database
         // Very specific command runs
         Task<TResult> Query<TResult>(string table, Dictionary<string, dynamic> filter) where TResult : new();
         void Insert(string table, dynamic obj);
+        void Update<TResult>(string table, Dictionary<string, dynamic> filter, Dictionary<string, dynamic> update);
         // Task<bool> Delete(string table, uint id);
     }
 }
