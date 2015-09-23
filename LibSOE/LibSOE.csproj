@@ -64,6 +64,7 @@
     <Compile Include="Database\IDatabaseBackend.cs" />
     <Compile Include="Database\MongoBackend.cs" />
     <Compile Include="Database\SOEDatabaseManager.cs" />
+    <Compile Include="Database\FieldAttributes.cs" />
     <Compile Include="Handlers\SOEHandlers.cs" />
     <Compile Include="Interfaces\SOEMessage.cs" />
     <Compile Include="Core\SOEClient.cs" />
