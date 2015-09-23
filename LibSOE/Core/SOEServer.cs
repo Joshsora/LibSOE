@@ -36,11 +36,12 @@ namespace SOE.Core
     public class SOEServer
     {
         // Server components
-        private readonly UdpClient UdpClient;
         public readonly SOEConnectionManager ConnectionManager;
-        public readonly SOEProtocol Protocol;
         public readonly SOEDatabaseManager DatabaseManager;
+        public readonly SOEProtocol Protocol;
+        private readonly UdpClient UdpClient;
 
+        // Threading packets/messages
         private readonly ConcurrentQueue<SOEPendingPacket> IncomingPackets;
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
         
@@ -69,13 +70,13 @@ namespace SOE.Core
 
             // Server components
             ConnectionManager = new SOEConnectionManager(this);
+            DatabaseManager = new SOEDatabaseManager(this);
             Protocol = new SOEProtocol(this, protocol);
 
             IncomingPackets = new ConcurrentQueue<SOEPendingPacket>();
             IncomingMessages = new ConcurrentQueue<SOEPendingMessage>();
 
             // Initialize our message handlers
-            Log("Initializing message handlers");
             MessageHandlers.Initialize();
             Log("Initiated server");
         }
