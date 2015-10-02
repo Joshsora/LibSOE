@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Net;
-
+using log4net;
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -12,6 +12,7 @@ namespace SOE.Core
     {
         // Server component
         public SOEServer Server;
+        public readonly ILog Log;
 
         // Connections
         private readonly List<SOEClient> Clients;
@@ -41,7 +42,8 @@ namespace SOE.Core
             SessionID2ClientID = new Dictionary<uint, int>();
 
             // Log
-            Log("Service constructed");
+            Log = Server.Logger.GetLogger("SOEConnectionManager");
+            Log.Info("Service constructed");
         }
 
         public bool AddNewClient(SOEClient newClient)
@@ -51,7 +53,7 @@ namespace SOE.Core
             int maxConnections = Configuration["MaxConnections"];
 
             // Do we want this connection?
-            if (wantDirectConnections)
+            if (!wantDirectConnections)
             {
                 // We don't want a direct connection
                 return false;
@@ -83,7 +85,7 @@ namespace SOE.Core
             if (SessionID2ClientID.ContainsKey(newClient.GetSessionID()))
             {
                 // Disconnect the new client
-                Log("[WARNING] Someone tried connecting with the same Session ID!");
+                Log.Warn("Someone tried connecting with the same Session ID!");
                 newClient.Disconnect((ushort)SOEDisconnectReasons.ConnectFail);
 
                 // Don't continue adding this connection
@@ -94,7 +96,7 @@ namespace SOE.Core
             if (Host2ClientID.ContainsKey(newClient.Client))
             {
                 // Disconnect the new client
-                Log("[WARNING] Someone tried connecting from the same endpoint!");
+                Log.Warn("Someone tried connecting from the same endpoint!");
                 newClient.Disconnect((ushort)SOEDisconnectReasons.ConnectFail);
 
                 // Don't continue adding this connection
@@ -131,7 +133,7 @@ namespace SOE.Core
             SessionID2ClientID.Add(newClient.GetSessionID(), newClientId);
 
             // Log
-            Log("New client connection from {0}, (ID: {1})", newClient.GetClientAddress(), newClient.GetClientID());
+            Log.InfoFormat("New client connection from {0}, (ID: {1})", newClient.GetClientAddress(), newClient.GetClientID());
             return true;
         }
 
@@ -177,7 +179,7 @@ namespace SOE.Core
         public void DisconnectClient(SOEClient client, ushort reason, bool clientBased = false)
         {
             // Disconnect
-            Log("Disconnecting client on {0} (ID: {1}) for reason: {2}", client.GetClientAddress(), client.GetClientID(), (SOEDisconnectReasons)reason);
+            Log.InfoFormat("Disconnecting client on {0} (ID: {1}) for reason: {2}", client.GetClientAddress(), client.GetClientID(), (SOEDisconnectReasons)reason);
             
             // Are they a connected client?
             if (Clients.Contains(client))
@@ -233,7 +235,7 @@ namespace SOE.Core
                         // Idle?
                         if (now > (client.GetLastInteraction() + clientTimeout))
                         {
-                            Log("Disconnecting Idle client.");
+                            Log.InfoFormat("Disconnecting Idle client");
                             client.Disconnect((ushort)SOEDisconnectReasons.Timeout);
                         }
                     }
@@ -252,18 +254,13 @@ namespace SOE.Core
                 if (!Configuration.ContainsKey(configVariable.Key))
                 {
                     // Bad configuration variable
-                    Log("Invalid configuration variable '{0}' for SOEConnectionManager instance. Ignoring.", configVariable.Key);
+                    Console.WriteLine("Invalid configuration variable '{0}' for SOEConnectionManager instance. Ignoring", configVariable.Key);
                     continue;
                 }
 
                 // Set this variable
                 Configuration[configVariable.Key] = configVariable.Value;
             }
-        }
-
-        public void Log(string message, params object[] args)
-        {
-            Console.WriteLine(":SOEConnectionManager: " + message, args);
         }
     }
 }

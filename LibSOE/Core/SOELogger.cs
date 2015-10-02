@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using log4net;
 using log4net.Appender;
 using log4net.Config;
+using log4net.Core;
+using log4net.Filter;
 using log4net.Layout;
 using log4net.Repository;
+using log4net.Repository.Hierarchy;
 
 namespace SOE.Core
 {
@@ -15,13 +18,14 @@ namespace SOE.Core
 
         // Repo
         public ILoggerRepository Repo;
+        public ILog Log;
 
         // Settings
         public Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>
         {
             // Basic information
             {"Filename", "SOEServer.log"},
-            {"LogPatern", "<%date> :%logger: [%level] %message%newline"},
+            {"LogPattern", "<%date> :%logger: [%level] %message%newline"},
 
             // Types of logging
             {"WantConsoleLogging", true},
@@ -31,13 +35,22 @@ namespace SOE.Core
             {"WantApplicationLogging", false},
 
             // Severities
-            {"WantInfo", true},
-            {"WantDebug", true},
-            {"WantError", true},
-            {"WantWarning", true},
+            {"LoggingLevel", "all"},
 
             // Prettiness
             {"WantColors", false}
+        };
+
+        // Logging level dictionary
+        public readonly Dictionary<string, Level> LoggingLevels = new Dictionary<string, Level>
+        {
+            {"all", Level.All},
+            {"debug", Level.Debug},
+            {"info", Level.Info},
+            {"warn", Level.Warn},
+            {"error", Level.Error},
+            {"fatal", Level.Fatal},
+            {"off", Level.Off}
         };
 
         public SOELogger(SOEServer server)
@@ -47,7 +60,123 @@ namespace SOE.Core
 
         public void StartLogging()
         {
+            // Get variables
+            bool wantLibraryLogging = Configuration["WantLibraryLogging"];
+            bool wantConsoleLogging = Configuration["WantConsoleLogging"];
+            bool wantFileLogging = Configuration["WantFileLogging"];
+            bool wantColors = Configuration["WantColors"];
+            string rawFilename = Configuration["Filename"];
+            string filename = string.Format(rawFilename, DateTime.Now);
 
+            // Create a repo
+            Repo = LogManager.CreateRepository(Server.GetFullname());
+            Hierarchy hierachy = (Hierarchy) Repo;
+
+            // Create a pattern
+            PatternLayout pattern = new PatternLayout();
+            pattern.ConversionPattern = Configuration["LogPattern"];
+            pattern.ActivateOptions();
+
+            // Create a filter
+            LoggerMatchFilter[] filters = new LoggerMatchFilter[0];
+            if (!wantLibraryLogging)
+            {
+                filters = new []
+                {
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOEServer",
+                        AcceptOnMatch = false
+                    },
+
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOEConnectionManager",
+                        AcceptOnMatch = false
+                    },
+
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOEProtocol",
+                        AcceptOnMatch = false
+                    },
+
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOELogger",
+                        AcceptOnMatch = false
+                    },
+
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOEDataChannel",
+                        AcceptOnMatch = false
+                    }
+                };
+            }
+
+            // Appenders
+            if (wantConsoleLogging)
+            {
+                if (wantColors)
+                {
+                    ColoredConsoleAppender appender = new ColoredConsoleAppender
+                    {
+                        Layout = pattern
+                    };
+                    foreach (var filter in filters)
+                    {
+                        appender.AddFilter(filter);
+                    }
+
+                    appender.ActivateOptions();
+                    hierachy.Root.AddAppender(appender);
+                }
+                else
+                {
+                    ConsoleAppender appender = new ConsoleAppender
+                    {
+                        Layout = pattern
+                    };
+                    foreach (var filter in filters)
+                    {
+                        appender.AddFilter(filter);
+                    }
+
+                    appender.ActivateOptions();
+                    hierachy.Root.AddAppender(appender);
+                }
+            }
+
+            if (wantFileLogging)
+            {
+                FileAppender appender = new FileAppender
+                {
+                    AppendToFile = false,
+                    File = filename,
+                    Layout = pattern
+                };
+                foreach (var filter in filters)
+                {
+                    appender.AddFilter(filter);
+                }
+
+                appender.ActivateOptions();
+                hierachy.Root.AddAppender(appender);
+            }
+
+            // Configure the hierachy
+            Level configLevel = Level.All;
+            if (LoggingLevels.ContainsKey(Configuration["LoggingLevel"]))
+            {
+                configLevel = LoggingLevels[Configuration["LoggingLevel"]];
+            }
+
+            hierachy.Root.Level = configLevel;
+            hierachy.Configured = true;
+
+            // Add ourselves
+            Log = GetLogger("SOELogger");
         }
 
         public void Configure(Dictionary<string, dynamic> configuration)
@@ -64,6 +193,11 @@ namespace SOE.Core
                 // Set this variable
                 Configuration[configVariable.Key] = configVariable.Value;
             }
+        }
+
+        public ILog GetLogger(string name)
+        {
+            return LogManager.GetLogger(Repo.Name, name);
         }
     }
 }

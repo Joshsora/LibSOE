@@ -213,11 +213,8 @@ namespace SOE.Interfaces
                 if (message.IsFragmented)
                 {
                     // We're gonna have to fragment, so we can't handle this gracefully...
-                    client.Server.Log("[ERROR] Tried to handle 'GetFinalSOEPacket' call on written SOEMessage gracefully but failed due to fragmentation. Returning null.");
-                    client.Server.Log("[INFO] Call 'GetFinalSOEMessage' as it deals with fragmentation!");
-
-                    // Welp, goodbye world! :'(
-                    return null;
+                    client.Server.Log.Fatal("Tried to handle 'GetFinalSOEPacket' call on written SOEMessage gracefully but failed due to fragmentation.");
+                    Environment.Exit(0);
                 }
 
                 // Make the new packet
@@ -237,7 +234,7 @@ namespace SOE.Interfaces
                 appendCRC = true;
 
                 // We handled it gracefully! :)
-                client.Server.Log("[INFO] Handled 'GetFinalSOEPacket' call on written SOEMessage gracefully.");
+                client.Server.Log.Info("Handled 'GetFinalSOEPacket' call on written SOEMessage gracefully.");
             }
             else
             {
@@ -305,10 +302,8 @@ namespace SOE.Interfaces
             if (!IsMessage)
             {
                 // Yes, and there really isn't a nice way to deal with this..
-                client.Server.Log("[ERROR] Tried Calling 'GetFinalSOEMessage' on written SOEPacket. Returning null.");
-
-                // Welp, goodbye world! :'(
-                return null;
+                client.Server.Log.Fatal("Tried Calling 'GetFinalSOEMessage' on written SOEPacket.");
+                Environment.Exit(0);
             }
 
             // Make our message

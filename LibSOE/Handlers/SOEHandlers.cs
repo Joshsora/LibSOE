@@ -53,7 +53,7 @@ namespace SOE.Core
             else
             {
                 // They aren't using the right protocol...
-                Log("Got connection request from client with incorrect protocol. Client: {0}, Server: {1}", protocol, ourProtocol);
+                Log.ErrorFormat("Got connection request from client with incorrect protocol. Client: {0}, Server: {1}", protocol, ourProtocol);
             }
         }
 

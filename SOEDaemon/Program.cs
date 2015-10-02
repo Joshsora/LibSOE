@@ -24,8 +24,8 @@ namespace SOEDaemon
                 // Are we verbose?
                 if (Options.Verbose)
                 {
-                    // Log verbosely
-                    Log("Using configuration: {0}", Options.ConfigFile);
+                    // Console.WriteLine verbosely
+                    Console.WriteLine("Using configuration: {0}", Options.ConfigFile);
                 }
 
                 // Configure!
@@ -54,10 +54,11 @@ namespace SOEDaemon
                 try
                 {
                     rootArray = JArray.Parse(reader.ReadToEnd());
+                    reader.Close();
                 }
                 catch (JsonReaderException e)
                 {
-                    Log("Invalid configuration!");
+                    Console.WriteLine("Invalid configuration!");
                     return;
                 }
 
@@ -66,7 +67,7 @@ namespace SOEDaemon
                     // Check if this property is an Object
                     if (server.Type != JTokenType.Object)
                     {
-                        Log("Invalid configuration! Servers must be JSON Objects!");
+                        Console.WriteLine("Invalid configuration! Servers must be JSON Objects!");
                         Environment.Exit(0);
                     }
 
@@ -112,16 +113,11 @@ namespace SOEDaemon
                     }
                     catch (Exception)
                     {
-                        Log("Invalid configuration! Two servers cannot have the same name!");
+                        Console.WriteLine("Invalid configuration! Two servers cannot have the same name!");
                         Environment.Exit(0);
                     }
                 }
             }
-        }
-
-        static void Log(string message, params object[] args)
-        {
-            Console.WriteLine(":SOEDaemon: " + message, args);
         }
     }
 }

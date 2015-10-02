@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using log4net;
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -9,6 +9,7 @@ namespace SOE.Core
     {
         // Components
         public SOEClient Client;
+        public ILog Log;
 
         // Last client-sent reliable data
         private ushort LastReceivedSequenceNumber;
@@ -42,6 +43,8 @@ namespace SOE.Core
             FragmentsTillAck = 6;
             BusySendingFragmentedPacket = false;
             FragmentedQueue = new Queue<SOEMessage>();
+
+            Log = client.Server.Logger.GetLogger("SOEDataChannel");
         }
 
         private void Acknowledge(ushort sequenceNumber)
@@ -198,12 +201,12 @@ namespace SOE.Core
             else if (opCode == (ushort) SOEOPCodes.ACK_RELIABLE_DATA)
             {
                 // TODO: Handle repeat-until-acknowledged and all that comes with it.
-                Log("Data Ack");
+                Log.InfoFormat("(Client {0}) Data Ack", Client.GetClientID());
             }
             else
             {
                 // Shrug ¯\_(ツ)_/¯
-                Log("Received a packet that was not data or acknowledge. Discarding..");
+                Log.WarnFormat("(Client {0}) Received a packet that was not data or acknowledge! Discarding..", Client.GetClientID());
             }
         }
 
@@ -304,12 +307,6 @@ namespace SOE.Core
             }
 
             return sequenceNumber;;
-        }
-
-        public void Log(string message, params object[] args)
-        {
-            string msg = string.Format(":SOEDataChannel(Client: {0}): ", Client.GetClientID()) + message;
-            Console.WriteLine(msg, args);
         }
     }
 }

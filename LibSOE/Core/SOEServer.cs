@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using log4net;
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -39,6 +40,7 @@ namespace SOE.Core
         public readonly SOEConnectionManager ConnectionManager;
         public readonly SOEProtocol Protocol;
         public readonly SOELogger Logger;
+        public readonly ILog Log;
 
         private readonly ConcurrentQueue<SOEPendingPacket> IncomingPackets;
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
@@ -72,41 +74,12 @@ namespace SOE.Core
 
         public SOEServer(Dictionary<string, dynamic> configuration)
         {
-            // Server components
-            ConnectionManager = new SOEConnectionManager(this);
-            Protocol = new SOEProtocol(this);
-            Logger = new SOELogger(this);
-
             // Configure!
             foreach (var configVariable in configuration)
             {
                 if (!Configuration.ContainsKey(configVariable.Key))
                 {
-                    // Is it a component?
-                    switch (configVariable.Key)
-                    {
-                        case "ConnectionManager":
-                            ConnectionManager.Configure(configuration["ConnectionManager"]);
-                            break;
-
-                        case "Protocol":
-                            Protocol.Configure(configuration["Protocol"]);
-                            break;
-
-                        case "Logger":
-                            Logger.Configure(configuration["Logger"]);
-                            break;
-
-                        case "Application":
-                            break;
-
-                        default:
-                            // Bad configuration variable
-                            Log("Invalid configuration variable '{0}' for SOEServer instance. Ignoring.", configVariable.Key);
-                            break;
-                    }
-
-                    // Continue!
+                    // We do this in a specific order so, continue!
                     continue;
                 }
 
@@ -114,12 +87,32 @@ namespace SOE.Core
                 Configuration[configVariable.Key] = configVariable.Value;
             }
 
+            // Start logging
+            Logger = new SOELogger(this);
+            if (configuration.ContainsKey("Logger"))
+            {
+                Logger.Configure(configuration["Logger"]);
+            }
+            Logger.StartLogging();
+
+            Log = Logger.GetLogger("SOEServer");
+            Log.InfoFormat("Initializing server...");
+
+            // Configure components
+            ConnectionManager = new SOEConnectionManager(this);
+            if (configuration.ContainsKey("ConnectionManager"))
+            {
+                ConnectionManager.Configure(configuration["ConnectionManager"]);
+            }
+
+            Protocol = new SOEProtocol(this);
+            if (configuration.ContainsKey("Protocol"))
+            {
+                Protocol.Configure(configuration["Protocol"]);
+            }
+
             // Get variables
             int port = Configuration["Port"];
-
-            // Start logging
-            Logger.StartLogging();
-            Log("Initiating server on port: {0}", port);
 
             // UDP Listener
             UdpClient = new UdpClient(port);
@@ -128,9 +121,19 @@ namespace SOE.Core
             IncomingMessages = new ConcurrentQueue<SOEPendingMessage>();
 
             // Initialize our message handlers
-            Log("Initializing message handlers");
+            Log.Info("Loading roles...");
             MessageHandlers.Initialize();
-            Log("Initiated server");
+
+            // Finish constructing
+            Log.Info("Finished initiating server!");
+        }
+
+        public string GetFullname()
+        {
+            string name = Configuration["Name"];
+            int id = Configuration["ID"];
+
+            return string.Format("{0}{1}", name, id);
         }
 
         private void DoNetCycle()
@@ -204,7 +207,7 @@ namespace SOE.Core
             int threadSleep = Configuration["ServerThreadSleep"];
 
             // Server threads
-            Log("Starting server threads");
+            Log.Info("Starting server threads...");
             Thread netThread = new Thread((threadStart) =>
             {
                 while (Running)
@@ -277,17 +280,12 @@ namespace SOE.Core
             ConnectionManager.StartKeepAliveThread();
 
             // Done
-            Log("Started listening");
+            Log.Info("Started listening!");
         }
 
         public void Stop()
         {
             Running = false;
-        }
-
-        public void Log(string message, params object[] args)
-        {
-            Console.WriteLine(":SOEServer: " + message, args);
         }
     }
 }
