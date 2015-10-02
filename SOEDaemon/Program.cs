@@ -107,7 +107,8 @@ namespace SOEDaemon
                     // Add the new server to our servers list
                     try
                     {
-                        Servers.Add(newServer.Configuration["Name"], newServer);
+                        string serverName = newServer.Configuration["Name"];
+                        Servers.Add(serverName, newServer);
                     }
                     catch (Exception)
                     {
