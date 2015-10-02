@@ -17,7 +17,8 @@ namespace SOE.Core
             string protocol = reader.ReadNullTerminatedString();
 
             // Is the client using the correct protocol?
-            if (ProtocolString == protocol)
+            string ourProtocol = Configuration["ProtocolString"];
+            if (ourProtocol == protocol)
             {
                 // Can we encrypt/compress?
                 bool encryptable = false;
@@ -52,7 +53,7 @@ namespace SOE.Core
             else
             {
                 // They aren't using the right protocol...
-                Log("Got connection request from client with incorrect protocol. Client: {0}, Server: {1}", protocol, ProtocolString);
+                Log("Got connection request from client with incorrect protocol. Client: {0}, Server: {1}", protocol, ourProtocol);
             }
         }
 

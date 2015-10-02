@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Ionic.Zlib;
@@ -8,7 +9,6 @@ namespace SOE.Core
 {
     public partial class SOEProtocol
     {
-        public string ProtocolString;
         private readonly SOEServer Server;
 
         static readonly uint[] CRCTable =
@@ -58,18 +58,20 @@ namespace SOE.Core
             0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
         };
 
-        public SOEProtocol(SOEServer server, string protocol)
+        // Settings
+        public Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>
+        {
+            // Basic information
+            {"ProtocolString", "SOE"}
+        };
+
+        public SOEProtocol(SOEServer server)
         {
             // This components settings
             Server = server;
-            ProtocolString = protocol;
-
-            // Make our protocol known
-            MessageHandlers.MakeProtocol(protocol);
 
             // Log
             Log("Service constructed");
-            Log("Using protocol -- {0}", ProtocolString);
         }
 
         public void HandlePacket(SOEClient sender, byte[] rawPacket)
@@ -210,18 +212,19 @@ namespace SOE.Core
 
         public void HandleMessage(SOEClient sender, SOEMessage message)
         {
-            // Handlers
-            if (MessageHandlers.HasHandler(ProtocolString, message.GetOpCode()))
-            {
-                // Get game name
-                string gameName = Server.Configuration["ShortGameName"];
+            // Get variable
+            string protocolString = Configuration["ProtocolString"];
+            string gameName = Server.Configuration["ShortGameName"];
 
+            // Handlers
+            if (MessageHandlers.HasHandler(protocolString, message.GetOpCode()))
+            {
                 // Log
-                string messageName = MessageHandlers.Protocol2MessageName[ProtocolString][message.GetOpCode()];
+                string messageName = MessageHandlers.Protocol2MessageName[protocolString][message.GetOpCode()];
                 Log("Received 0x{0:X}, {1}_{2}!", message.GetOpCode(), gameName, messageName);
 
                 // Handle it
-                MessageHandlers.GetHandler(ProtocolString, message.GetOpCode())(sender, message);
+                MessageHandlers.GetHandler(protocolString, message.GetOpCode())(sender, message);
             }
             else
             {
@@ -400,6 +403,27 @@ namespace SOE.Core
             }
 
             return ~nCrc;
+        }
+
+        public void Configure(Dictionary<string, dynamic> configuration)
+        {
+            foreach (var configVariable in configuration)
+            {
+                if (!Configuration.ContainsKey(configVariable.Key))
+                {
+                    // Bad configuration variable
+                    Log("Invalid configuration variable '{0}' for SOEProtocol instance. Ignoring.", configVariable.Key);
+                    continue;
+                }
+
+                // Set this variable
+                Configuration[configVariable.Key] = configVariable.Value;
+            }
+
+            // Make our protocol known
+            string protocolString = Configuration["ProtocolString"];
+            MessageHandlers.MakeProtocol(protocolString);
+            Log("Using protocol -- {0}", protocolString);
         }
 
         public void Log(string message, params object[] args)

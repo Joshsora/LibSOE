@@ -74,7 +74,7 @@ namespace SOE.Core
         {
             // Server components
             ConnectionManager = new SOEConnectionManager(this);
-            Protocol = new SOEProtocol(this, "CGAPI_257");
+            Protocol = new SOEProtocol(this);
 
             // Configure!
             foreach (var configVariable in configuration)
@@ -89,7 +89,7 @@ namespace SOE.Core
                             break;
 
                         case "Protocol":
-                            // Protocol.Configure(configuration["Protocol"]);
+                            Protocol.Configure(configuration["Protocol"]);
                             break;
 
                         case "Logger":
