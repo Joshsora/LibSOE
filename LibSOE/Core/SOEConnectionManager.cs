@@ -160,6 +160,10 @@ namespace SOE.Core
 
         public void StartKeepAliveThread()
         {
+            // Get variables
+            int clientTimeout = 15; // TODO: Use connection manager configuration
+            int threadSleep = Server.Configuration["ServerThreadSleep"];
+
             Thread keepAliveThread = new Thread((threadStart3) =>
             {
                 while (Server.Running)
@@ -180,17 +184,17 @@ namespace SOE.Core
                         }
 
                         // Idle?
-                        if (now > (client.GetLastInteraction() + Server.CLIENT_TIMEOUT))
+                        if (now > (client.GetLastInteraction() + clientTimeout))
                         {
                             Log("Disconnecting Idle client.");
                             client.Disconnect((ushort)SOEDisconnectReasons.Timeout);
                         }
                     }
 
-                    Thread.Sleep(Server.SERVER_THREAD_SLEEP);
+                    Thread.Sleep(threadSleep);
                 }
             });
-            keepAliveThread.Name = "SOEServer::KeepAliveThread";
+            keepAliveThread.Name = "SOEConnectionManager::KeepAliveThread";
             keepAliveThread.Start();
         }
 

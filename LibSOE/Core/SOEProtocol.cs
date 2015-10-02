@@ -2,7 +2,6 @@
 using System.Linq;
 using System.IO;
 using Ionic.Zlib;
-
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -214,9 +213,12 @@ namespace SOE.Core
             // Handlers
             if (MessageHandlers.HasHandler(ProtocolString, message.GetOpCode()))
             {
+                // Get game name
+                string gameName = Server.Configuration["ShortGameName"];
+
                 // Log
                 string messageName = MessageHandlers.Protocol2MessageName[ProtocolString][message.GetOpCode()];
-                Log("Received 0x{0:X}, {1}_{2}!", message.GetOpCode(), Server.GAME_NAME, messageName);
+                Log("Received 0x{0:X}, {1}_{2}!", message.GetOpCode(), gameName, messageName);
 
                 // Handle it
                 MessageHandlers.GetHandler(ProtocolString, message.GetOpCode())(sender, message);

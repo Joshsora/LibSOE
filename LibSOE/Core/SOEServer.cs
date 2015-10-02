@@ -2,8 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
-
+using Newtonsoft.Json.Linq;
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -43,31 +44,82 @@ namespace SOE.Core
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
         
         // Server variables
-        public readonly bool Running = true;
-        private readonly int Port = 0;
+        public bool Running = true;
 
         // Settings
-        public string GAME_NAME = "SOE";
-
-        public int CLIENT_TIMEOUT = 15;
-        public int SERVER_THREAD_SLEEP = 13;
-
-        public int THREAD_POOL_SIZE = 8;
-        public bool WANT_PACKET_THREADING = true;
-        public bool WANT_MESSAGE_THREADING = true;
-
-        public SOEServer(int port, string protocol="SOE")
+        public Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>
         {
+            // Basic information
+            {"Name", "SOEServer"},
+            {"Port", 20260},
+            {"ID", 4001},
+            {"Roles", new object[0]},
+
+            // Application settings
+            {"AppName", "Sony Online"},
+            {"ShortAppName", "SOE"},
+
+            // Threading toggles
+            {"WantDynamicThreading", true},
+            {"WantPacketThreading", true},
+            {"WantMessageThreading", true},
+
+            // Threading settings
+            {"ServerThreadSleep", 13},
+            {"MinThreadPoolSize", 2},
+            {"MaxThreadPoolSize", 8}
+        };
+
+        public SOEServer(Dictionary<string, dynamic> configuration)
+        {
+            // Server components
+            ConnectionManager = new SOEConnectionManager(this);
+            Protocol = new SOEProtocol(this, "CGAPI_257");
+
+            // Configure!
+            foreach (var configVariable in configuration)
+            {
+                if (!Configuration.ContainsKey(configVariable.Key))
+                {
+                    // Is it a component?
+                    switch (configVariable.Key)
+                    {
+                        case "ConnectionManager":
+                            // ConnectionManager.Configure(configuration["ConnectionManager"]);
+                            break;
+
+                        case "Protocol":
+                            // Protocol.Configure(configuration["Protocol"]);
+                            break;
+
+                        case "Logger":
+                            break;
+
+                        case "Application":
+                            break;
+
+                        default:
+                            // Bad configuration variable
+                            Log("Invalid configuration variable '{0}' for SOEServer instance. Ignoring.", configVariable.Key);
+                            break;
+                    }
+
+                    // Continue!
+                    continue;
+                }
+
+                // Set this variable
+                Configuration[configVariable.Key] = configVariable.Value;
+            }
+
+            // Get variables
+            int port = Configuration["Port"];
+
             // Log
             Log("Initiating server on port: {0}", port);
 
             // UDP Listener
             UdpClient = new UdpClient(port);
-            Port = port;
-
-            // Server components
-            ConnectionManager = new SOEConnectionManager(this);
-            Protocol = new SOEProtocol(this, protocol);
 
             IncomingPackets = new ConcurrentQueue<SOEPendingPacket>();
             IncomingMessages = new ConcurrentQueue<SOEPendingMessage>();
@@ -80,8 +132,12 @@ namespace SOE.Core
 
         private void DoNetCycle()
         {
+            // Get variables
+            bool wantPacketThreading = Configuration["WantPacketThreading"];
+            int port = Configuration["Port"];
+
             // Receive a packet
-            IPEndPoint sender = new IPEndPoint(IPAddress.Any, Port);
+            IPEndPoint sender = new IPEndPoint(IPAddress.Any, port);
             byte[] rawPacket;
 
             try
@@ -103,7 +159,7 @@ namespace SOE.Core
             }
 
             // Do we wanna handle this, or give it to our workers?
-            if (WANT_PACKET_THREADING)
+            if (wantPacketThreading)
             {
                 // Put it in the queue for our workers..
                 IncomingPackets.Enqueue(new SOEPendingPacket(client, rawPacket));
@@ -123,7 +179,10 @@ namespace SOE.Core
 
         public void ReceiveMessage(SOEClient sender, byte[] rawMessage)
         {
-            if (WANT_MESSAGE_THREADING)
+            // Get variables
+            bool wantMessageThreading = Configuration["WantMessageThreading"];
+
+            if (wantMessageThreading)
             {
                 IncomingMessages.Enqueue(new SOEPendingMessage(sender, rawMessage));
             }
@@ -135,6 +194,12 @@ namespace SOE.Core
 
         public void Run()
         {
+            // Get variables
+            bool wantPacketThreading = Configuration["WantPacketThreading"];
+            bool wantMessageThreading = Configuration["WantMessageThreading"];
+            int maxThreadPoolSize = Configuration["MaxThreadPoolSize"];
+            int threadSleep = Configuration["ServerThreadSleep"];
+
             // Server threads
             Log("Starting server threads");
             Thread netThread = new Thread((threadStart) =>
@@ -145,16 +210,16 @@ namespace SOE.Core
                     DoNetCycle();
 
                     // Sleep
-                    Thread.Sleep(SERVER_THREAD_SLEEP);
+                    Thread.Sleep(threadSleep);
                 }
             });
             netThread.Name = "SOEServer::NetThread";
             netThread.Start();
 
             // Create the packet worker threads
-            if (WANT_PACKET_THREADING)
+            if (wantPacketThreading)
             {
-                for (int i = 0; i < THREAD_POOL_SIZE; i++)
+                for (int i = 0; i < maxThreadPoolSize; i++)
                 {
                     Thread workerThread = new Thread((workerThreadStart) =>
                     {
@@ -169,7 +234,7 @@ namespace SOE.Core
                             }
 
                             // Sleep
-                            Thread.Sleep(SERVER_THREAD_SLEEP);
+                            Thread.Sleep(threadSleep);
                         }
                     });
 
@@ -179,9 +244,9 @@ namespace SOE.Core
             }
 
             // Create the message worker threads
-            if (WANT_PACKET_THREADING)
+            if (wantMessageThreading)
             {
-                for (int i = 0; i < THREAD_POOL_SIZE; i++)
+                for (int i = 0; i < maxThreadPoolSize; i++)
                 {
                     Thread workerThread = new Thread((workerThreadStart) =>
                     {
@@ -196,7 +261,7 @@ namespace SOE.Core
                             }
 
                             // Sleep
-                            Thread.Sleep(SERVER_THREAD_SLEEP);
+                            Thread.Sleep(threadSleep);
                         }
                     });
 
@@ -210,6 +275,11 @@ namespace SOE.Core
 
             // Done
             Log("Started listening");
+        }
+
+        public void Stop()
+        {
+            Running = false;
         }
 
         public void Log(string message, params object[] args)
