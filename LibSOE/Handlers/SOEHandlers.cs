@@ -28,25 +28,26 @@ namespace SOE.Core
                 sender.SetCompressable(compressable);
                 sender.SetEncryptable(encryptable);
 
-                Server.ConnectionManager.AddNewClient(sender);
+                if (Server.ConnectionManager.AddNewClient(sender))
+                {
+                    // Setup a writer
+                    SOEWriter writer = new SOEWriter((ushort) SOEOPCodes.SESSION_RESPONSE);
 
-                // Setup a writer
-                SOEWriter writer = new SOEWriter((ushort)SOEOPCodes.SESSION_RESPONSE);
+                    // Write a response
+                    writer.AddUInt32(sessionID);
+                    writer.AddUInt32(sender.GetCRCSeed());
+                    writer.AddByte((byte) crcLength);
+                    writer.AddBoolean(compressable);
+                    writer.AddBoolean(encryptable);
+                    writer.AddUInt32(udpBufferSize);
+                    writer.AddUInt32(3);
 
-                // Write a response
-                writer.AddUInt32(sessionID);
-                writer.AddUInt32(sender.GetCRCSeed());
-                writer.AddByte((byte)crcLength);
-                writer.AddBoolean(compressable);
-                writer.AddBoolean(encryptable);
-                writer.AddUInt32(udpBufferSize);
-                writer.AddUInt32(3);
+                    // Get the response
+                    SOEPacket response = writer.GetFinalSOEPacket(sender, false, false);
 
-                // Get the response
-                SOEPacket response = writer.GetFinalSOEPacket(sender, false, false);
-
-                // Send the response!
-                sender.SendPacket(response);
+                    // Send the response!
+                    sender.SendPacket(response);
+                }
             }
             else
             {

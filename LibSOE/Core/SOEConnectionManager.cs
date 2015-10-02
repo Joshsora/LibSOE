@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Net;
 
@@ -17,6 +18,18 @@ namespace SOE.Core
         private readonly Dictionary<IPEndPoint, int> Host2ClientID;
         private readonly Dictionary<uint, int> SessionID2ClientID;
 
+        // Settings
+        public Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>
+        {
+            // Basic information
+            {"MaxConnections", -1},
+            {"Timeout", 15},
+
+            // Connection types
+            {"WantRoutedConnections", false},
+            {"WantDirectConnections", true}
+        };
+
         public SOEConnectionManager(SOEServer server)
         {
             // Server
@@ -31,8 +44,41 @@ namespace SOE.Core
             Log("Service constructed");
         }
 
-        public void AddNewClient(SOEClient newClient)
+        public bool AddNewClient(SOEClient newClient)
         {
+            // Get variables
+            bool wantDirectConnections = Configuration["WantDirectConnections"];
+            int maxConnections = Configuration["MaxConnections"];
+
+            // Do we want this connection?
+            if (wantDirectConnections)
+            {
+                // We don't want a direct connection
+                return false;
+            }
+
+            // Have we hit max connections?
+            if (Clients.Count == maxConnections)
+            {
+                // Loop through the Clients list, looking for an open space
+                bool hasSpace = false;
+                for (int i = 0; i < Clients.Count; i++)
+                {
+                    // Is this client nulled?
+                    if (Clients[i] == null)
+                    {
+                        hasSpace = true;
+                        break;
+                    }
+                }
+
+                // Don't continue adding this connection
+                if (!hasSpace)
+                {
+                    return false;
+                }
+            }
+
             // Do they exist already?
             if (SessionID2ClientID.ContainsKey(newClient.GetSessionID()))
             {
@@ -41,7 +87,7 @@ namespace SOE.Core
                 newClient.Disconnect((ushort)SOEDisconnectReasons.ConnectFail);
 
                 // Don't continue adding this connection
-                return;
+                return false;
             }
 
             // Is there already a connection from this endpoint?
@@ -52,7 +98,7 @@ namespace SOE.Core
                 newClient.Disconnect((ushort)SOEDisconnectReasons.ConnectFail);
 
                 // Don't continue adding this connection
-                return;
+                return false;
             }
 
             // Loop through the Clients list, looking for an open space
@@ -86,6 +132,7 @@ namespace SOE.Core
 
             // Log
             Log("New client connection from {0}, (ID: {1})", newClient.GetClientAddress(), newClient.GetClientID());
+            return true;
         }
 
         public SOEClient GetClient(int clientId)
@@ -161,7 +208,7 @@ namespace SOE.Core
         public void StartKeepAliveThread()
         {
             // Get variables
-            int clientTimeout = 15; // TODO: Use connection manager configuration
+            int clientTimeout = Configuration["Timeout"];
             int threadSleep = Server.Configuration["ServerThreadSleep"];
 
             Thread keepAliveThread = new Thread((threadStart3) =>
@@ -196,6 +243,22 @@ namespace SOE.Core
             });
             keepAliveThread.Name = "SOEConnectionManager::KeepAliveThread";
             keepAliveThread.Start();
+        }
+
+        public void Configure(Dictionary<string, dynamic> configuration)
+        {
+            foreach (var configVariable in configuration)
+            {
+                if (!Configuration.ContainsKey(configVariable.Key))
+                {
+                    // Bad configuration variable
+                    Log("Invalid configuration variable '{0}' for SOEConnectionManager instance. Ignoring.", configVariable.Key);
+                    continue;
+                }
+
+                // Set this variable
+                Configuration[configVariable.Key] = configVariable.Value;
+            }
         }
 
         public void Log(string message, params object[] args)
