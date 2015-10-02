@@ -39,8 +39,8 @@
     <Reference Include="Ionic.Zip">
       <HintPath>..\packages\DotNetZip.1.9.6\lib\net20\Ionic.Zip.dll</HintPath>
     </Reference>
-    <Reference Include="Ionic.Zlib">
-      <HintPath>..\Ionic.Zlib.dll</HintPath>
+    <Reference Include="log4net">
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\SOEDataChannel.cs" />
+    <Compile Include="Core\SOELogger.cs" />
     <Compile Include="Database\IDatabaseBackend.cs" />
     <Compile Include="Handlers\SOEHandlers.cs" />
     <Compile Include="Interfaces\SOEMessage.cs" />

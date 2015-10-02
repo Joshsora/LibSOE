@@ -4,7 +4,6 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using Newtonsoft.Json.Linq;
 using SOE.Interfaces;
 
 namespace SOE.Core
@@ -39,6 +38,7 @@ namespace SOE.Core
         private readonly UdpClient UdpClient;
         public readonly SOEConnectionManager ConnectionManager;
         public readonly SOEProtocol Protocol;
+        public readonly SOELogger Logger;
 
         private readonly ConcurrentQueue<SOEPendingPacket> IncomingPackets;
         private readonly ConcurrentQueue<SOEPendingMessage> IncomingMessages;
@@ -75,6 +75,7 @@ namespace SOE.Core
             // Server components
             ConnectionManager = new SOEConnectionManager(this);
             Protocol = new SOEProtocol(this);
+            Logger = new SOELogger(this);
 
             // Configure!
             foreach (var configVariable in configuration)
@@ -93,6 +94,7 @@ namespace SOE.Core
                             break;
 
                         case "Logger":
+                            Logger.Configure(configuration["Logger"]);
                             break;
 
                         case "Application":
@@ -115,7 +117,8 @@ namespace SOE.Core
             // Get variables
             int port = Configuration["Port"];
 
-            // Log
+            // Start logging
+            Logger.StartLogging();
             Log("Initiating server on port: {0}", port);
 
             // UDP Listener
