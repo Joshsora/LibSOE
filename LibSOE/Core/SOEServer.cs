@@ -85,7 +85,7 @@ namespace SOE.Core
                     switch (configVariable.Key)
                     {
                         case "ConnectionManager":
-                            // ConnectionManager.Configure(configuration["ConnectionManager"]);
+                            ConnectionManager.Configure(configuration["ConnectionManager"]);
                             break;
 
                         case "Protocol":
