@@ -80,12 +80,7 @@ namespace SOEDaemon
                         string name = propertyKeyval.Key;
                         JToken property = propertyKeyval.Value;
 
-                        if (property.Type != JTokenType.Object)
-                        {
-                            // Server value
-                            serverConfig.Add(name, property.Value<object>());
-                        }
-                        else
+                        if (property.Type == JTokenType.Object)
                         {
                             // We have a component configuration
                             Dictionary<string, dynamic> componentConfig = new Dictionary<string, dynamic>();
@@ -98,6 +93,15 @@ namespace SOEDaemon
 
                             // Add it to the server configuration
                             serverConfig.Add(propertyKeyval.Key, componentConfig);
+                        }
+                        else if (property.Type == JTokenType.Array)
+                        {
+                            serverConfig.Add(name, property.ToObject<string[]>());
+                        }
+                        else
+                        {
+                            // Server value
+                            serverConfig.Add(name, property.Value<object>());
                         }
                     }
 

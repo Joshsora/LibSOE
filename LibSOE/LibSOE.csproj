@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="Core\SOEDataChannel.cs" />
     <Compile Include="Core\SOELogger.cs" />
+    <Compile Include="Core\SOERoleManager.cs" />
     <Compile Include="Database\IDatabaseBackend.cs" />
     <Compile Include="Handlers\SOEHandlers.cs" />
     <Compile Include="Interfaces\SOEMessage.cs" />

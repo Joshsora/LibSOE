@@ -69,7 +69,6 @@ namespace SOE.Core
             // Handle
             if (sessionID == sender.GetSessionID())
             {
-                Console.WriteLine("Disconnecting");
                 Server.ConnectionManager.DisconnectClient(sender, reason, true);
             }
         }

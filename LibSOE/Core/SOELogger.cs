@@ -18,7 +18,6 @@ namespace SOE.Core
 
         // Repo
         public ILoggerRepository Repo;
-        public ILog Log;
 
         // Settings
         public Dictionary<string, dynamic> Configuration = new Dictionary<string, dynamic>
@@ -111,6 +110,12 @@ namespace SOE.Core
                     {
                         LoggerToMatch = "SOEDataChannel",
                         AcceptOnMatch = false
+                    },
+
+                    new LoggerMatchFilter()
+                    {
+                        LoggerToMatch = "SOERoleManager",
+                        AcceptOnMatch = false
                     }
                 };
             }
@@ -124,6 +129,38 @@ namespace SOE.Core
                     {
                         Layout = pattern
                     };
+                    appender.AddMapping(new ColoredConsoleAppender.LevelColors
+                    {
+                        Level = Level.Debug,
+                        ForeColor = ColoredConsoleAppender.Colors.Cyan
+                            | ColoredConsoleAppender.Colors.HighIntensity
+                    });
+                    appender.AddMapping(new ColoredConsoleAppender.LevelColors
+                    {
+                        Level = Level.Info,
+                        ForeColor = ColoredConsoleAppender.Colors.White
+                            | ColoredConsoleAppender.Colors.HighIntensity
+                    });
+                    appender.AddMapping(new ColoredConsoleAppender.LevelColors
+                    {
+                        Level = Level.Warn,
+                        ForeColor = ColoredConsoleAppender.Colors.Yellow
+                            | ColoredConsoleAppender.Colors.HighIntensity
+                    });
+                    appender.AddMapping(new ColoredConsoleAppender.LevelColors
+                    {
+                        Level = Level.Error,
+                        ForeColor = ColoredConsoleAppender.Colors.Red
+                            | ColoredConsoleAppender.Colors.HighIntensity
+                    });
+                    appender.AddMapping(new ColoredConsoleAppender.LevelColors
+                    {
+                        Level = Level.Fatal,
+                        ForeColor = ColoredConsoleAppender.Colors.White
+                            | ColoredConsoleAppender.Colors.HighIntensity,
+                        BackColor = ColoredConsoleAppender.Colors.Red
+                    });
+
                     foreach (var filter in filters)
                     {
                         appender.AddFilter(filter);
@@ -174,9 +211,6 @@ namespace SOE.Core
 
             hierachy.Root.Level = configLevel;
             hierachy.Configured = true;
-
-            // Add ourselves
-            Log = GetLogger("SOELogger");
         }
 
         public void Configure(Dictionary<string, dynamic> configuration)

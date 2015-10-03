@@ -120,6 +120,20 @@ namespace SOE.Interfaces
             AddBytes(Message);
         }
 
+        public void AddASCIIString(string value)
+        {
+            byte[] Message = Encoding.ASCII.GetBytes(value);
+            AddHostUInt32((uint)value.Length);
+            AddBytes(Message);
+        }
+
+        public void AddUnicodeString(string value)
+        {
+            byte[] Message = Encoding.Unicode.GetBytes(value);
+            AddHostUInt32((uint)value.Length);
+            AddBytes(Message);
+        }
+
         public void AddBoolean(bool value)
         {
             byte v = (byte)(value ? 0x1 : 0x0);

@@ -426,6 +426,7 @@ namespace SOE.Core
             // Make our protocol known
             string protocolString = Configuration["ProtocolString"];
             MessageHandlers.MakeProtocol(protocolString);
+
             Log.InfoFormat("Using protocol -- {0}", protocolString);
         }
     }

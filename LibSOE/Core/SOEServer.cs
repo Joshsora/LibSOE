@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using log4net;
 using SOE.Interfaces;
@@ -39,6 +40,7 @@ namespace SOE.Core
         private readonly UdpClient UdpClient;
         public readonly SOEConnectionManager ConnectionManager;
         public readonly SOEProtocol Protocol;
+        public readonly SOERoleManager RoleManager;
         public readonly SOELogger Logger;
         public readonly ILog Log;
 
@@ -55,7 +57,6 @@ namespace SOE.Core
             {"Name", "SOEServer"},
             {"Port", 20260},
             {"ID", 4001},
-            {"Roles", new object[0]},
 
             // Application settings
             {"AppName", "Sony Online"},
@@ -72,6 +73,8 @@ namespace SOE.Core
             {"MaxThreadPoolSize", 8}
         };
 
+        public Dictionary<string, dynamic> ApplicationConfiguration;
+
         public SOEServer(Dictionary<string, dynamic> configuration)
         {
             // Configure!
@@ -85,6 +88,12 @@ namespace SOE.Core
 
                 // Set this variable
                 Configuration[configVariable.Key] = configVariable.Value;
+            }
+
+            ApplicationConfiguration = new Dictionary<string, dynamic>();
+            if (configuration.ContainsKey("Application"))
+            {
+                ApplicationConfiguration = configuration["Application"];
             }
 
             // Start logging
@@ -111,17 +120,33 @@ namespace SOE.Core
                 Protocol.Configure(configuration["Protocol"]);
             }
 
+            RoleManager = new SOERoleManager(this);
+            if (configuration.ContainsKey("Roles"))
+            {
+                IEnumerable<object> ol = configuration["Roles"];
+                IEnumerable<string> roles = ol.Cast<string>();
+
+                RoleManager.LoadRoles(roles.ToArray());
+            }
+
             // Get variables
             int port = Configuration["Port"];
 
             // UDP Listener
-            UdpClient = new UdpClient(port);
+            try
+            {
+                UdpClient = new UdpClient(port);
+            }
+            catch (SocketException)
+            {
+                Log.FatalFormat("You already have a server running on port: {0}", port);
+                Environment.Exit(0);
+            }
 
             IncomingPackets = new ConcurrentQueue<SOEPendingPacket>();
             IncomingMessages = new ConcurrentQueue<SOEPendingMessage>();
 
             // Initialize our message handlers
-            Log.Info("Loading roles...");
             MessageHandlers.Initialize();
 
             // Finish constructing
